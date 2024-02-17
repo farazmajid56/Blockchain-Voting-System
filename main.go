@@ -1,7 +1,8 @@
 package main
 
 import (
-	"crypto/sha256"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -57,14 +58,9 @@ func IsValidCandidate(candidate string) bool {
 	_, exists := Candidates[candidate]
 	return exists
 }
-// RegisterVoter adds a new voter to the system.
-func RegisterVoter(voterID int) {
-	fmt.Printf("Voter %d registered.\n", voterID)
-}
 
 // CastVote allows a registered voter to cast a vote.
 func CastVote(voterID int, candidate string) {
-	
 	// Check if the voter is registered
 	if !IsRegisteredVoter(voterID) {
 		fmt.Printf("VoterID %d is not registered", voterID)
@@ -83,69 +79,68 @@ func CastVote(voterID int, candidate string) {
 		return
 	}
 
-
-	
-
-	// Check if the voter has already cast a vote
-	
-
-
-
-
-
-
-
-
-	// Check if the candidate exists
-	
-
-
-
-
-
-	
 	// Add the vote to the current block
 	vote := Vote{VoterID: voterID, Candidate: candidate}
 	lastBlock := Blockchain[len(Blockchain)-1]
-	newBlock := 
+
+	newBlock := Block{
+		PrevHash: lastBlock.CurrentHash,
+		Votes:    append(lastBlock.Votes, vote),
+	}
+	newBlock.CurrentHash = calculateHash(newBlock, vote)
+
 	Blockchain = append(Blockchain, newBlock)
-
-
-
-
-	// Update candidate vote count
-	
-
 
 	fmt.Printf("Vote cast by Voter %d for %s is recorded.\n", voterID, candidate)
 }
 
 // calculateHash calculates the hash of a block.
 func calculateHash(block Block, vote Vote) string {
-	
-
-
-
+	data := fmt.Sprintf("%v-%v-%v", block.PrevHash, block.Votes, vote)
+	hash := md5.New()
+	hash.Write([]byte(data))
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 // CalculateElectionResults calculates and displays the winner of the election.
 func CalculateElectionResults() {
 	fmt.Println("\nElection Results:")
 	var winner string
-	maxVotes := -1
+	maxVotes := 0
 
 	// Write your logic for calculating the winner of the election
-	
+	var Results = make(map[string]int)
+	lastBlock := Blockchain[len(Blockchain)-1]
 
+	// for i := 0; i < len(lastBlock.Votes); i++ {
+	// 	_, exists := Results[lastBlock.Votes[i].Candidate]
+	// 	if exists {
+	// 		Results[lastBlock.Votes[i].Candidate] += 1
+	// 	} else {
+	// 		Results[lastBlock.Votes[i].Candidate] = 1
+	// 	}
+	// }
 
+	for i := 0; i < len(lastBlock.Votes); i++ {
+		Results[lastBlock.Votes[i].Candidate]++
+	}
 
+	// Find the winner and check for ties
+	var tieCandidates []string // Keeps track of maxVote candidates
+	for candidate, votes := range Results {
+		if votes > maxVotes {
+			maxVotes = votes
+			winner = candidate
+			tieCandidates = nil
+			tieCandidates = append(tieCandidates, candidate)
+		} else if votes == maxVotes {
+			tieCandidates = append(tieCandidates, candidate)
+		}
+	}
 
-
-
-
-
-
-
+	if len(tieCandidates) > 1 {
+		winner = "Tie"
+	}
 
 	if winner != "Tie" {
 		fmt.Printf("Winner: %s\n", winner)
@@ -176,9 +171,9 @@ func main() {
 	CastVote(3, "Candidate B") // Attempted Double Voting
 	CastVote(4, "Candidate B")
 	CastVote(5, "Candidate A")
-	CastVote(5, "Candidate A") // Attempted Double Voting
-	CastVote(6, "Candidate B") // Should Print in case of tie
-	CastVote(7, "Candidate C") // Invalid Candidate ID
+	CastVote(5, "Candidate A")  // Attempted Double Voting
+	CastVote(6, "Candidate B")  // Should Print in case of tie
+	CastVote(7, "Candidate C")  // Invalid Candidate ID
 	CastVote(11, "Candidate B") // Invalid Voter ID
 
 	// Calculate and display election results
