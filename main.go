@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 )
@@ -81,11 +81,15 @@ func CastVote(voterID int, candidate string) {
 
 	// Add the vote to the current block
 	vote := Vote{VoterID: voterID, Candidate: candidate}
+
+	var votes []Vote
+	votes = append(votes, vote)
+
 	lastBlock := Blockchain[len(Blockchain)-1]
 
 	newBlock := Block{
 		PrevHash: lastBlock.CurrentHash,
-		Votes:    append(lastBlock.Votes, vote),
+		Votes:    votes, //append(lastBlock.Votes, vote),
 	}
 	newBlock.CurrentHash = calculateHash(newBlock, vote)
 
@@ -96,8 +100,8 @@ func CastVote(voterID int, candidate string) {
 
 // calculateHash calculates the hash of a block.
 func calculateHash(block Block, vote Vote) string {
-	data := fmt.Sprintf("%v-%v-%v", block.PrevHash, block.Votes, vote)
-	hash := md5.New()
+	data := fmt.Sprintf("%v%v%v", block.PrevHash, block.Votes, vote)
+	hash := sha256.New()
 	hash.Write([]byte(data))
 	return hex.EncodeToString(hash.Sum(nil))
 }
