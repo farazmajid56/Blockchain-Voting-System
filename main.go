@@ -24,6 +24,39 @@ var Blockchain []Block
 // Candidates is a map to store candidate vote counts.
 var Candidates map[string]int
 
+// Registered Voters // SET
+var RegisteredVoters []int
+
+func IsRegisteredVoter(voterID int) bool {
+	for i := 0; i < len(RegisteredVoters); i++ {
+		if RegisteredVoters[i] == voterID {
+			return true
+		}
+	}
+	return false
+}
+
+func IsDuplicateVote(voterID int) bool {
+	list := Blockchain[len(Blockchain)-1].Votes
+	for i := 0; i < len(list); i++ {
+		if voterID == list[i].VoterID {
+			return true
+		}
+	}
+	return false
+}
+
+// RegisterVoter adds a new voter to the system.
+func RegisterVoter(voterID int) {
+	fmt.Printf("Voter %d registered.\n", voterID)
+	// TODO: Check for duplicates
+	RegisteredVoters = append(RegisteredVoters, voterID)
+}
+
+func IsValidCandidate(candidate string) bool {
+	_, exists := Candidates[candidate]
+	return exists
+}
 // RegisterVoter adds a new voter to the system.
 func RegisterVoter(voterID int) {
 	fmt.Printf("Voter %d registered.\n", voterID)
@@ -31,8 +64,24 @@ func RegisterVoter(voterID int) {
 
 // CastVote allows a registered voter to cast a vote.
 func CastVote(voterID int, candidate string) {
-	// Check if the voter is registered
 	
+	// Check if the voter is registered
+	if !IsRegisteredVoter(voterID) {
+		fmt.Printf("VoterID %d is not registered", voterID)
+		return
+	}
+
+	// Check if the voter has already cast a vote
+	if IsDuplicateVote(voterID) {
+		fmt.Printf("VoterID %d has already voted\n", voterID)
+		return
+	}
+
+	// Check if the candidate exists
+	if !IsValidCandidate(candidate) {
+		fmt.Printf("VoterID %d is trying to vote to an invalid candidate\n", voterID)
+		return
+	}
 
 
 	
