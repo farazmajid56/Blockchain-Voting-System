@@ -51,6 +51,12 @@ func IsDuplicateVote(voterID int) bool {
 func RegisterVoter(voterID int) {
 	fmt.Printf("Voter %d registered.\n", voterID)
 	// TODO: Check for duplicates
+	for _, value := range RegisteredVoters {
+		if value == voterID {
+			fmt.Printf("Voter %d has already registered.\n", voterID)
+			return
+		}
+	}
 	RegisteredVoters = append(RegisteredVoters, voterID)
 }
 
