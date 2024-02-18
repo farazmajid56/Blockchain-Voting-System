@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 )
@@ -38,9 +40,8 @@ func IsRegisteredVoter(voterID int) bool {
 }
 
 func IsDuplicateVote(voterID int) bool {
-	list := Blockchain[len(Blockchain)-1].Votes
-	for i := 0; i < len(list); i++ {
-		if voterID == list[i].VoterID {
+	for i := 1; i < len(Blockchain); i++ {
+		if voterID == Blockchain[i].Votes[0].VoterID {
 			return true
 		}
 	}
@@ -50,7 +51,6 @@ func IsDuplicateVote(voterID int) bool {
 // RegisterVoter adds a new voter to the system.
 func RegisterVoter(voterID int) {
 	fmt.Printf("Voter %d registered.\n", voterID)
-	// TODO: Check for duplicates
 	for _, value := range RegisteredVoters {
 		if value == voterID {
 			fmt.Printf("Voter %d has already registered.\n", voterID)
@@ -88,27 +88,66 @@ func CastVote(voterID int, candidate string) {
 	// Add the vote to the current block
 	vote := Vote{VoterID: voterID, Candidate: candidate}
 
-	var votes []Vote
-	votes = append(votes, vote)
-
 	lastBlock := Blockchain[len(Blockchain)-1]
 
 	newBlock := Block{
 		PrevHash: lastBlock.CurrentHash,
-		Votes:    votes, //append(lastBlock.Votes, vote),
+		Votes:    []Vote{vote}, //append(lastBlock.Votes, vote),
 	}
-	newBlock.CurrentHash = calculateHash(newBlock, vote)
+
+	newHash := calculateHash(newBlock, vote)
+	if newHash == "error" {
+		fmt.Print("Error in conversion to Bytes")
+		return
+	}
+
+	newBlock.CurrentHash = newHash //calculateHash(newBlock, vote)
 
 	Blockchain = append(Blockchain, newBlock)
+
+	// Update candidate vote count
+	Candidates[candidate]++
 
 	fmt.Printf("Vote cast by Voter %d for %s is recorded.\n", voterID, candidate)
 }
 
+func ConvertDataToBytes(vote Vote, votes []Vote, prevHash string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	// Convert Vote to bytes
+	if err := binary.Write(buf, binary.LittleEndian, int64(vote.VoterID)); err != nil {
+		return nil, fmt.Errorf("error converting vote.VoterID to bytes: %v", err)
+	}
+	if err := binary.Write(buf, binary.LittleEndian, []byte(vote.Candidate)); err != nil {
+		return nil, fmt.Errorf("error converting vote.Candidate to bytes: %v", err)
+	}
+
+	// Convert []Vote to bytes
+	for _, v := range votes {
+		if err := binary.Write(buf, binary.LittleEndian, int64(v.VoterID)); err != nil {
+			return nil, fmt.Errorf("error converting vote.VoterID to bytes: %v", err)
+		}
+		if err := binary.Write(buf, binary.LittleEndian, []byte(v.Candidate)); err != nil {
+			return nil, fmt.Errorf("error converting vote.Candidate to bytes: %v", err)
+		}
+	}
+
+	// Convert PrevHash to bytes
+	if err := binary.Write(buf, binary.LittleEndian, []byte(prevHash)); err != nil {
+		return nil, fmt.Errorf("error converting prevHash to bytes: %v", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
 // calculateHash calculates the hash of a block.
 func calculateHash(block Block, vote Vote) string {
-	data := fmt.Sprintf("%v%v%v", block.PrevHash, block.Votes, vote)
+	concatenatedData, err := ConvertDataToBytes(vote, block.Votes, block.PrevHash)
+	if err != nil {
+		return "error"
+	}
 	hash := sha256.New()
-	hash.Write([]byte(data))
+	hash.Write([]byte(concatenatedData))
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
@@ -120,7 +159,18 @@ func CalculateElectionResults() {
 
 	// Write your logic for calculating the winner of the election
 	var Results = make(map[string]int)
+	// * Normal Version (For Dummies 🤓)
+	// for candidate, votes := range Candidates {
+	// 	fmt.Printf("%s: %d votes\n", candidate, votes)
+	// 	if votes > maxVotes {
+	// 		maxVotes = votes
+	// 		winner = candidate
+	// 	} else if maxVotes == votes {
+	// 		winner = "Tie"
+	// 	}
+	// }
 
+	// * Blockchain Version Expensive !!!
 	// Ignore Genisis Block
 	for i := 1; i < len(Blockchain); i++ {
 		Results[Blockchain[i].Votes[0].Candidate]++
