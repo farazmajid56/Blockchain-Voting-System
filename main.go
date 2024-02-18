@@ -63,19 +63,19 @@ func IsValidCandidate(candidate string) bool {
 func CastVote(voterID int, candidate string) {
 	// Check if the voter is registered
 	if !IsRegisteredVoter(voterID) {
-		fmt.Printf("VoterID %d is not registered", voterID)
+		fmt.Printf("Invalid voter ID: %d\n", voterID)
 		return
 	}
 
 	// Check if the voter has already cast a vote
 	if IsDuplicateVote(voterID) {
-		fmt.Printf("VoterID %d has already voted\n", voterID)
+		fmt.Printf("Voter %d has already cast a vote.\n", voterID)
 		return
 	}
 
 	// Check if the candidate exists
 	if !IsValidCandidate(candidate) {
-		fmt.Printf("VoterID %d is trying to vote to an invalid candidate\n", voterID)
+		fmt.Printf("Candidate %s does not exist.\n", candidate)
 		return
 	}
 
@@ -114,19 +114,14 @@ func CalculateElectionResults() {
 
 	// Write your logic for calculating the winner of the election
 	var Results = make(map[string]int)
-	lastBlock := Blockchain[len(Blockchain)-1]
 
-	// for i := 0; i < len(lastBlock.Votes); i++ {
-	// 	_, exists := Results[lastBlock.Votes[i].Candidate]
-	// 	if exists {
-	// 		Results[lastBlock.Votes[i].Candidate] += 1
-	// 	} else {
-	// 		Results[lastBlock.Votes[i].Candidate] = 1
-	// 	}
-	// }
+	// Ignore Genisis Block
+	for i := 1; i < len(Blockchain); i++ {
+		Results[Blockchain[i].Votes[0].Candidate]++
+	}
 
-	for i := 0; i < len(lastBlock.Votes); i++ {
-		Results[lastBlock.Votes[i].Candidate]++
+	for key, value := range Results {
+		fmt.Printf("%s: %d votes\n", key, value)
 	}
 
 	// Find the winner and check for ties
@@ -167,7 +162,7 @@ func main() {
 	for i := 1; i <= 10; i++ {
 		RegisterVoter(i)
 	}
-
+	fmt.Print("\n")
 	// Simulate voting process
 	CastVote(1, "Candidate A")
 	CastVote(2, "Candidate B")
